@@ -1,8 +1,10 @@
-name: Build APK
+name: Build and publish APK
 on:
   push:
     branches: [main]
   workflow_dispatch:
+permissions:
+  contents: write
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -16,7 +18,19 @@ jobs:
         with:
           gradle-version: "8.7"
       - run: gradle :app:assembleDebug
+      - name: Rename APK
+        run: cp app/build/outputs/apk/debug/app-debug.apk BackWatch.apk
       - uses: actions/upload-artifact@v4
         with:
           name: BackWatch-apk
-          path: app/build/outputs/apk/debug/app-debug.apk
+          path: BackWatch.apk
+      - name: Publish public GitHub Release
+        if: github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v0.1.${{ github.run_number }}
+          name: BackWatch v0.1.${{ github.run_number }}
+          body: |
+            Automatically published APK build from main.
+          files: BackWatch.apk
+          make_latest: true
